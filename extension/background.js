@@ -1,16 +1,21 @@
 'use strict';
 
-chrome.contextMenus.create({
-    id: "open_with",
-    title: "Open with DjVu.js Viewer",
-    contexts: ["link"],
-    targetUrlPatterns: [
-        '*://*/*.djvu',
-        '*://*/*.djv',
-        '*://*/*.djvu?*',
-        '*://*/*.djv?*',
-    ]
-});
+try {
+	chrome.contextMenus.create({
+		id: "open_with_djvujs",
+		title: "Open with DjVu.js Viewer",
+		contexts: ["link"],
+		targetUrlPatterns: [
+			'http://kramerius.nkp.cz/*.djvu',
+			'http://kramerius.nkp.cz/*.djv',
+			'http://kramerius.nkp.cz/*.djvu?*',
+			'http://kramerius.nkp.cz/*.djv?*',
+		]
+	});
+} catch (e) {
+	console.error("Failed to add to context menus", e);
+}
+
 
 function promisify(func) {
     return function (...args) {
@@ -71,12 +76,10 @@ const registerViewerTab = tabId => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (sender.tab && message === "include_scripts") {
         Promise.all([
-            promisify(chrome.tabs.executeScript)(sender.tab.id, { frameId: sender.frameId, file: 'djvu.js', runAt: "document_end" }),
-            promisify(chrome.tabs.executeScript)(sender.tab.id, { frameId: sender.frameId, file: 'djvu_viewer.js', runAt: "document_end" }),
-            promisify(chrome.tabs.insertCSS)(sender.tab.id, { frameId: sender.frameId, file: 'djvu_viewer.css', runAt: "document_end" })
-        ]).then(() => {
-            sendResponse();
-        })
+            promisify(chrome.tabs.executeScript)(sender.tab.id, { frameId: sender.frameId, file: 'dist/djvu.js', runAt: "document_end" }),
+            promisify(chrome.tabs.executeScript)(sender.tab.id, { frameId: sender.frameId, file: 'dist/djvu_viewer.js', runAt: "document_end" }),
+            promisify(chrome.tabs.insertCSS)(sender.tab.id, { frameId: sender.frameId, file: 'dist/djvu_viewer.css', runAt: "document_end" })
+        ]).then(sendResponse);
         return true; // do not send response immediately
     }
 
@@ -102,7 +105,7 @@ function openViewerTab(djvuUrl = null) {
 chrome.browserAction.onClicked.addListener(() => openViewerTab());
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === "open_with") {
+    if (info.menuItemId === "open_with_djvujs") {
         openViewerTab(info.linkUrl);
     }
 });
@@ -134,14 +137,10 @@ const onBeforeRequest = chrome.webRequest.onBeforeRequest;
 const enableHttpIntercepting = () => {
     !onBeforeRequest.hasListener(requestInterceptor) && onBeforeRequest.addListener(requestInterceptor, {
         urls: [
-            'http://*/*.djvu',
-            'http://*/*.djvu?*',
-            'https://*/*.djvu',
-            'https://*/*.djvu?*',
-            'http://*/*.djv',
-            'http://*/*.djv?*',
-            'https://*/*.djv',
-            'https://*/*.djv?*',
+            'http://kramerius.nkp.cz/*.djvu',
+            'http://kramerius.nkp.cz/*.djvu?*',
+            'http://kramerius.nkp.cz/*.djv',
+            'http://kramerius.nkp.cz/*.djv?*',
         ],
         types: ['main_frame', 'sub_frame'],
     },
@@ -182,8 +181,7 @@ const onHeadersReceived = chrome.webRequest.onHeadersReceived;
 const enableHeadersAnalysis = () => {
     !onHeadersReceived.hasListener(headersAnalyzer) && onHeadersReceived.addListener(headersAnalyzer, {
         urls: [
-            'http://*/*',
-            'https://*/*',
+            'http://kramerius.nkp.cz/*',
         ],
         types: ['main_frame', 'sub_frame'],
     }, ['blocking', 'responseHeaders']);

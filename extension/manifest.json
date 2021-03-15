@@ -15,7 +15,7 @@
     "content_scripts": [
         {
             "matches": [
-                "*://*/*"
+                "http://kramerius.nkp.cz/*"
             ],
             "js": [
                 "content.js"
@@ -28,11 +28,13 @@
         "storage",
         "webRequest",
         "webRequestBlocking",
-        "<all_urls>",
+        "http://kramerius.nkp.cz/*",
         "contextMenus"
     ],
     "web_accessible_resources": [
-        "viewer.html"
+        "viewer.html",
+        "dist/djvu.js",
+        "dist/djvu_viewer.js"
     ],
     "icons": {
         "16": "djvu16.png",
